@@ -88,7 +88,7 @@ impl FromWorld for FontSpec {
 }
 
 #[derive(Default)]
-struct game {
+struct Game {
     guesses: Vec<String>
 }
 fn main() {
