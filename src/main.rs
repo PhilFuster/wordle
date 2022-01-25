@@ -6,10 +6,13 @@ mod colors;
 use colors::*;
 
 const TILE_SIZE: f32 = 60.0;
-const TILE_BACKGROUND_SIZE: f32 = 62.0;
+const TILE_BACKGROUND_SIZE: f32 = 64.0;
+/// compensating for the different SPACER & PADDING values between Rows and Column.
+/// (hence the off by one values)
 const COLUMN_SPACER: f32 = 5.0;
+const COLUMN_PADDING: f32 = 20.0;
 const ROW_SPACER: f32 = 6.0;
-const PADDING: f32 = 20.0;
+const ROW_PADDING: f32 = 19.0;
 
 #[derive(Debug, Component)]
 struct Board {
@@ -23,10 +26,12 @@ impl Board {
     fn new(columns: u8, rows:u8) -> Self {
         let width = f32::from(columns)
             * TILE_BACKGROUND_SIZE
-            + f32::from(columns + 1) * COLUMN_SPACER;
+            + f32::from(columns + 1) * COLUMN_SPACER
+            + COLUMN_PADDING * 2.0;
         let height = f32::from(rows)
             * TILE_BACKGROUND_SIZE
-            + f32::from(rows + 1) * ROW_SPACER;
+            + f32::from(rows + 1) * ROW_SPACER
+            + ROW_PADDING * 2.0;
         Board {
             columns,
             rows,
@@ -37,17 +42,19 @@ impl Board {
 
     fn column_position_to_physical(&self, col: u8) -> f32 {
         let offset =
-            -self.width/ 2.0 + 0.5 * TILE_BACKGROUND_SIZE;
+            -self.width / 2.0 + 0.5 * TILE_BACKGROUND_SIZE
+            + COLUMN_PADDING;
         offset
             + f32::from(col) * TILE_BACKGROUND_SIZE
             + f32::from(col + 1) * COLUMN_SPACER
     }
     fn row_position_to_physical(&self, row: u8) -> f32 {
         let offset =
-            -self.height/ 2.0 + 0.5 * TILE_BACKGROUND_SIZE;
+            -self.height / 2.0 + 0.5 * TILE_BACKGROUND_SIZE
+            + ROW_PADDING;
         offset
             + f32::from(row) * TILE_BACKGROUND_SIZE
-            + f32::from(row + 1) * COLUMN_SPACER
+            + f32::from(row + 1) * ROW_SPACER
     }
 }
 
@@ -81,7 +88,7 @@ impl FromWorld for FontSpec {
 }
 
 #[derive(Default)]
-struct Game {
+struct game {
     guesses: Vec<String>
 }
 fn main() {
