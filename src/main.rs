@@ -4,9 +4,15 @@ use std::{env, cmp::Ordering};
 
 mod colors;
 use colors::*;
+mod ui;
+use ui::*;
 
-const TILE_SIZE: f32 = 60.0;
+// tile_background_size is slightly bigger than tile_size which allows for a
+// border to show
 const TILE_BACKGROUND_SIZE: f32 = 64.0;
+// tile_size is the size of the actual tile that will sit on top
+// of the tile background.
+const TILE_SIZE: f32 = 60.0;
 const COLUMN_SPACER: f32 = 5.0;
 const COLUMN_PADDING: f32 = 20.0;
 const ROW_SPACER: f32 = 6.0;
@@ -22,6 +28,14 @@ struct Board {
 
 impl Board {
     fn new(columns: u8, rows:u8) -> Self {
+        // when calculating width and height using
+        // tile_background_size because that's the size of the whole tile.
+        // the tile will sit right on top of the background.
+        //
+        // get_spacers takes into account the fact it only needs
+        // space in between columns/rows. Should be no trailing spacers
+        //
+        // multiplying the padding * 2 because we want padding top/bottom/left/right
         let width = f32::from(columns)
             * TILE_BACKGROUND_SIZE
             + Board::get_spacers(columns) * COLUMN_SPACER
@@ -39,6 +53,10 @@ impl Board {
     }
 
     fn column_position_to_physical(&self, col: u8) -> f32 {
+        // columns go from left to right.
+        // take negative width of the board and divide by 2.
+        // multiple by half of the background size and add the
+        // column padding.
         let offset =
             -self.width / 2.0 + 0.5 * TILE_BACKGROUND_SIZE
             + COLUMN_PADDING;
@@ -100,6 +118,7 @@ struct Game {
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugin(GameUiPlugin)
         .init_resource::<FontSpec>()
         .add_startup_system(setup)
         .add_startup_system(spawn_game_board)
@@ -111,10 +130,14 @@ fn setup(mut commands: Commands) {
         .spawn_bundle(OrthographicCameraBundle::new_2d());
 }
 
+/// spawn a wordle game board.
+/// 5 columns (because the word to guess is a 5 letter word)
+/// 6 rows (because the user gets 6 guesses)
 fn spawn_game_board(mut commands: Commands) {
     let board = Board::new(5, 6);
-
+    // spawn game board
     commands
+        // board background
         .spawn_bundle(SpriteBundle {
             sprite: Sprite {
                 color: MATERIALS.board,
@@ -124,11 +147,17 @@ fn spawn_game_board(mut commands: Commands) {
                 )),
                 ..Sprite::default()
             },
+            transform: Transform::from_xyz(0.0, 100.0, 1.0),
             ..Default::default()
     })
     .with_children(|builder| {
+        // creating tiles
         for tile in (0..board.columns)
             .cartesian_product(0..board.rows) {
+                // spawn tile background.
+                // it's slightly bigger than the tile
+                // created next, right on top, in order
+                // to create a border effect.
                 builder.spawn_bundle(SpriteBundle {
                     sprite: Sprite {
                         color: MATERIALS.tile_placeholder,
@@ -148,6 +177,7 @@ fn spawn_game_board(mut commands: Commands) {
                     ),
                     ..Default::default()
                 });
+                // spawn tile
                 builder.spawn_bundle(SpriteBundle {
                     sprite: Sprite {
                         color: MATERIALS.tile,
@@ -170,14 +200,4 @@ fn spawn_game_board(mut commands: Commands) {
             }
     })
     .insert(board);
-}
-
-fn spawn_tiles(
-    mut commands: Commands,
-    query_board: Query<&Board>,
-    font_spec: Res<FontSpec>,
-) {
-    let board = query_board.single();
-    
-
 }
