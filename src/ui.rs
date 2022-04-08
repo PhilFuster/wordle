@@ -1,5 +1,5 @@
-use crate::colors::{KEYBOARD_MATERIALS, KeyboardMaterials, MATERIALS};
-use crate::{FontSpec, Game, Board, Position};
+use crate::colors::{KEYBOARD_MATERIALS,KeyboardMaterials, MATERIALS};
+use crate::{FontSpec, GameContext, Board, Position, GuessUpdateAction, GuessUpdateEvent};
 use bevy::prelude::*;
 
 const KEYBOARD_LETTERS: [&str; 28] = [
@@ -7,12 +7,16 @@ const KEYBOARD_LETTERS: [&str; 28] = [
     "A", "S", "D", "F", "G", "H", "J", "K", "L",
     "ENTER", "Z", "X", "C", "V", "B", "N", "M", "<-"
     ];
+
+pub const ENTER_KEY: &str = "ENTER";
+pub const BACK_KEY: &str = "<-";
 pub struct GameUiPlugin;
 
 
 impl Plugin for GameUiPlugin {
     fn build(&self, app: &mut App,) {
-        app.add_startup_system(setup_ui);
+        app.add_startup_system(setup_ui)
+            .add_system(keyboard_button_interaction_system);
     }
 }
 
@@ -149,4 +153,67 @@ fn spawn_keyboard_button(
                 });
             });
         
+}
+
+fn keyboard_button_interaction_system(
+    interaction_query: Query<
+        (&Interaction, &Children),
+        (Changed<Interaction>, With<Button>)
+    >,
+    text_query: Query<&Text>,
+    mut guess_writer: EventWriter<GuessUpdateEvent>,
+    game_context: Res<GameContext>,
+) {
+    for (interaction, children) in
+    interaction_query.iter() {
+        match interaction {
+            // only handling clicked events here..
+            Interaction::Clicked => {
+                    let guess_index = game_context.guess_index;
+                    let guess = &game_context.guess_collection[guess_index];
+                    // keyboard_button entity implemented such that the 1st child
+                    // is the TextBundle.
+                    let text = text_query.get(*children.first().expect(
+                        "expect button have a first child."
+                    ))
+                    .unwrap();
+                    // determine the kind of GuessUpdateAction taking place
+                    // based on the key that was pressed.
+                    let text_section = text.sections.first()
+                        .expect("Expect first section to be accessible as reference");
+                    let key = text_section.value.to_string();
+                    // turn key pressed in to a GuessUpdateAction
+                    let update_action = GuessUpdateAction::try_from(text_section.value.to_string()).ok();
+                    if let Some(action) = update_action {
+                        // validate whether a guess update can happen
+                        // based on the action.
+                        match action {
+                            GuessUpdateAction::Append => {
+                                if guess.len() > 4 {
+                                    // max len is 5.
+                                    // greater than 4 no good
+                                    continue;
+                                }
+                                guess_writer.send(GuessUpdateEvent{action: GuessUpdateAction::Append, key})
+                            }
+                            GuessUpdateAction::Delete => {
+                                if guess.len() < 1 {
+                                    // nothing to delete for the guess
+                                    continue;
+                                }
+                                guess_writer.send(GuessUpdateEvent{action: GuessUpdateAction::Delete, key})
+                            }
+                            GuessUpdateAction::Submit => {
+                                if guess.len() != 5 {
+                                    // guess length must be 5 to submit
+                                    continue;
+                                }
+                                guess_writer.send(GuessUpdateEvent{action: GuessUpdateAction::Submit, key})
+                            }
+                        }
+                    }
+                }
+                _ => ()
+            }
+    }
 }
