@@ -26,10 +26,96 @@ fn setup_ui(
 ) {
     // spawn the camera so people can see it lol
     commands.spawn_bundle(UiCameraBundle::default());
-    // create the keyboard the user will use to spell out words.
-
-    // spawn the background for the keyboard
+    // ui container - will hold the menu at the top and the keyboard at the bottom
     commands.spawn_bundle(NodeBundle {
+        style: Style {
+            size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+            align_items: AlignItems::FlexStart,
+            justify_content: JustifyContent::SpaceBetween,
+            flex_direction: FlexDirection::ColumnReverse,
+            ..Default::default()
+        },
+        transform: Transform::from_xyz(
+            0.0,
+            0.0,
+            0.0
+        ),
+        color: UiColor(Color::NONE),
+        ..Default::default()
+    }).with_children(|ui_container| {
+        // spawn menu
+        ui_container.spawn_bundle(NodeBundle {
+            style: Style {
+                size: Size::new(Val::Percent(100.0), Val::Auto),
+                align_items: AlignItems::Center,
+                align_self: AlignSelf::Center,
+                justify_content: JustifyContent::Center,
+                ..Default::default()
+            },
+            color: UiColor(MATERIALS.none),
+            ..Default::default()
+        })
+        .with_children(|parent| {
+            // game title
+            parent.spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    "Wordle",
+                    TextStyle {
+                        font: font_spec.family.clone(),
+                        font_size: 40.0,
+                        color: Color::WHITE,
+                    },
+                    TextAlignment::default(),
+                ),
+                style: Style {
+                    align_self: AlignSelf::Center,
+                    justify_content: JustifyContent::Center,
+                    ..Default::default()
+                },
+                ..Default::default()
+            });
+            // message display
+            parent.spawn_bundle(NodeBundle {
+                style: Style {
+                    size: Size::new(Val::Percent(100.0), Val::Auto),
+                    align_items: AlignItems::FlexEnd,
+                    justify_content: JustifyContent::FlexEnd,
+                    align_self: AlignSelf::FlexEnd,
+                    flex_direction: FlexDirection::ColumnReverse,
+                    padding: Rect { left: Val::Px(30.0), right: Val::Px(30.0), top: Val::Px(0.0), bottom: Val::Px(0.0) },
+                    ..Default::default()
+                },
+                color: UiColor(MATERIALS.none),
+                ..Default::default()
+            }).with_children(|builder| {
+                builder.spawn_bundle(TextBundle {
+                    text: Text::with_section(
+                        "Message Board",
+                        TextStyle {
+                            font: font_spec.family.clone(),
+                            font_size: 20.0,
+                            color: Color::WHITE
+                        },
+                        TextAlignment::default(),
+                    ),
+                    ..Default::default()
+                });
+                builder.spawn_bundle(TextBundle {
+                    text: Text::with_section(
+                        "{Default Text}",
+                        TextStyle {
+                            font: font_spec.family.clone(),
+                            font_size: 20.0,
+                            color: Color::WHITE
+                        },
+                        TextAlignment::default(),
+                    ),
+                    ..Default::default()
+                });
+            });
+        });
+        // spawn keyboard
+        ui_container.spawn_bundle(NodeBundle {
         style: Style {
             size: Size::new(Val::Percent(100.0), Val::Percent(30.0)),
             align_items: AlignItems::Center,
@@ -45,75 +131,75 @@ fn setup_ui(
         color: UiColor(Color::WHITE),
         ..Default::default()
     })
-    .with_children(|builder| {
+    .with_children(|kb_builder| {
         // keyboard tiles
         // row 1
-        builder.spawn_bundle(NodeBundle {
-            style: Style {
-                size: Size::new(Val::Percent(50.0), Val::Px(40.0)),
-                align_items: AlignItems::FlexStart,
-                margin: Rect {
-                    left: Val::Px(0.0),
-                    right: Val::Px(0.0),
-                    top: Val::Px(0.0),
-                    bottom: Val::Px(30.0),
+        kb_builder.spawn_bundle(NodeBundle {
+                style: Style {
+                    size: Size::new(Val::Percent(50.0), Val::Px(40.0)),
+                    align_items: AlignItems::FlexStart,
+                    margin: Rect {
+                        left: Val::Px(0.0),
+                        right: Val::Px(0.0),
+                        top: Val::Px(0.0),
+                        bottom: Val::Px(30.0),
+                    },
+                    justify_content: JustifyContent::Center,
+                    ..Default::default()
                 },
-                justify_content: JustifyContent::Center,
+                color: UiColor(Color::WHITE),
                 ..Default::default()
-            },
-            color: UiColor(Color::WHITE),
-            ..Default::default()
-        })
-        .with_children(|builder| {
-            for key_index in 0..=9 {
-                // call spawn_keyboard_key
-                spawn_keyboard_button(builder, &font_spec, key_index);
-            }
-        });
-        // row 2
-        builder.spawn_bundle(NodeBundle {
-            style: Style {
-                size: Size::new(Val::Percent(50.0), Val::Px(40.0)),
-                align_items: AlignItems::FlexStart,
-                margin: Rect {
-                    left: Val::Px(0.0),
-                    right: Val::Px(0.0),
-                    top: Val::Px(0.0),
-                    bottom: Val::Px(30.0),
+            })
+            .with_children(|builder| {
+                for key_index in 0..=9 {
+                    // call spawn_keyboard_key
+                    spawn_keyboard_button(builder, &font_spec, key_index);
+                }
+            });
+            // row 2
+            kb_builder.spawn_bundle(NodeBundle {
+                style: Style {
+                    size: Size::new(Val::Percent(50.0), Val::Px(40.0)),
+                    align_items: AlignItems::FlexStart,
+                    margin: Rect {
+                        left: Val::Px(0.0),
+                        right: Val::Px(0.0),
+                        top: Val::Px(0.0),
+                        bottom: Val::Px(30.0),
+                    },
+                    justify_content: JustifyContent::Center,
+                    ..Default::default()
                 },
-                justify_content: JustifyContent::Center,
+                color: UiColor(Color::WHITE),
                 ..Default::default()
-            },
-            color: UiColor(Color::WHITE),
-            ..Default::default()
-        })
-        .with_children(|builder| {
-            for key_index in 10..=18 {
-                // call spawn_keyboard_key
-                spawn_keyboard_button(builder, &font_spec, key_index);
-            }
-        });
-        // row 3
-        builder.spawn_bundle(NodeBundle {
-            style: Style {
-                size: Size::new(Val::Percent(50.0), Val::Px(40.0)),
-                align_items: AlignItems::FlexStart,
-                justify_content: JustifyContent::Center,
+            })
+            .with_children(|builder| {
+                for key_index in 10..=18 {
+                    // call spawn_keyboard_key
+                    spawn_keyboard_button(builder, &font_spec, key_index);
+                }
+            });
+            // row 3
+            kb_builder.spawn_bundle(NodeBundle {
+                style: Style {
+                    size: Size::new(Val::Percent(50.0), Val::Px(40.0)),
+                    align_items: AlignItems::FlexStart,
+                    justify_content: JustifyContent::Center,
+                    ..Default::default()
+                },
+                color: UiColor(Color::WHITE),
                 ..Default::default()
-            },
-            color: UiColor(Color::WHITE),
-            ..Default::default()
-        })
-        .with_children(|builder| {
-            for key_index in 19..=27 {
-                // call spawn_keyboard_key
-                spawn_keyboard_button(builder, &font_spec, key_index);
-            }
+            })
+            .with_children(|builder| {
+                for key_index in 19..=27 {
+                    // call spawn_keyboard_key
+                    spawn_keyboard_button(builder, &font_spec, key_index);
+                }
+            });
         });
     });
-    // menu
-
 }
+
 
 fn spawn_keyboard_button(
     commands: &mut ChildBuilder,
@@ -152,7 +238,6 @@ fn spawn_keyboard_button(
                     ..Default::default()
                 });
             });
-        
 }
 
 fn keyboard_button_interaction_system(
@@ -169,7 +254,7 @@ fn keyboard_button_interaction_system(
         match interaction {
             // only handling clicked events here..
             Interaction::Clicked => {
-                    let guess_index = game_context.guess_index;
+                    let guess_index = game_context.get_guess_index();
                     let guess = &game_context.guess_collection[guess_index];
                     // keyboard_button entity implemented such that the 1st child
                     // is the TextBundle.

@@ -17,6 +17,8 @@ const COLUMN_SPACER: f32 = 5.0;
 const COLUMN_PADDING: f32 = 20.0;
 const ROW_SPACER: f32 = 6.0;
 const ROW_PADDING: f32 = 20.0;
+// max of 5 guesses. range 0.=5
+const LAST_GUESS_INDEX: u8 = 5;
 
 #[derive(Debug, Component)]
 struct Board {
@@ -168,9 +170,14 @@ struct GameContext {
     // A game of wordle can take up to 5 guesses.
     // 1 guess is being maintained at a time.
     guess_collection: Vec<String>,
-    // the index of the guess being modified by user.
-    guess_index: usize,
     score: u32,
+}
+
+impl GameContext {
+    /// returns the index to guess_collection for the last guess.
+    fn get_guess_index(&self) -> usize {
+        self.guess_collection.len() - 1
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -277,7 +284,7 @@ fn spawn_tile(
                 board.row_position_to_physical(
                     pos.y
                 ) + 100.0, // matching the board's offset that makes room for keyboard
-                2.0,
+                3.0,
             ),
             ..Default::default()
         })
@@ -332,7 +339,14 @@ fn guess_update_handler(
     font_spec: Res<FontSpec>,
     mut game_context: ResMut<GameContext>,
 ) {
-    let guess_index = game_context.guess_index;
+    let guess_index = game_context.get_guess_index();
+    // row 0 of the board is at the bottom..
+    // I want the guesses to display from top to bottom not bottom to top.
+    // reversing the display starting position is needed.
+    // LAST_GUESS_INDEX - index of guess will give me the correct Y position.
+    // EX: last guess index (5) - guess index (0) = 5.
+    // guess_index increments to 1 after user submits guess then 5 - 1 = 4.
+    let guess_display_index = LAST_GUESS_INDEX as usize - guess_index;
     let guess: &mut String = &mut game_context.guess_collection[guess_index];
     // update the guess..
     for event in guess_reader.iter() {
@@ -341,12 +355,10 @@ fn guess_update_handler(
             GuessUpdateAction::Delete => {guess.pop();}
             GuessUpdateAction::Append => {guess.push_str(event.key.as_str());},
             GuessUpdateAction::Submit => {
-                // submit this guess & return 
+                if guess.len() < 5 {return}
                 todo!()
             },
         }
-        println!("event action: {}", &event.action);
-        dbg!("guess after action..: {}", &guess);
         //
         match event.action {
             GuessUpdateAction::Delete |
@@ -357,7 +369,7 @@ fn guess_update_handler(
                     .filter(|(pos, _children)|{
                         // only want tiles that are in the same rows as the
                         // guess we are working with
-                        pos.y as usize == guess_index
+                        pos.y as usize == guess_display_index
                     })
                     .sorted_by(|a, b|{
                         // order by column
@@ -366,7 +378,6 @@ fn guess_update_handler(
                         }
                     });
                 let mut guess_chars = guess.chars();
-                dbg!(&guess_chars);
                 // while there are still tiles to process
                 while let Some((position, children)) = it.next() {
                     if let Some(entity) = children.first() {
@@ -403,6 +414,5 @@ fn game_reset(
     for entity in tiles.iter() {
         commands.entity(entity).despawn_recursive();
     }
-    game.guess_index = 0;
     game.guess_collection = vec!["".to_string()];
 }
