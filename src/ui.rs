@@ -11,6 +11,8 @@ const KEYBOARD_LETTERS: [&str; 28] = [
 pub const ENTER_KEY: &str = "ENTER";
 pub const BACK_KEY: &str = "<-";
 pub struct GameUiPlugin;
+#[derive(Component)]
+pub struct MessageText;
 
 
 impl Plugin for GameUiPlugin {
@@ -48,7 +50,6 @@ fn setup_ui(
             style: Style {
                 size: Size::new(Val::Percent(100.0), Val::Auto),
                 align_items: AlignItems::Center,
-                align_self: AlignSelf::Center,
                 justify_content: JustifyContent::Center,
                 ..Default::default()
             },
@@ -57,32 +58,16 @@ fn setup_ui(
         })
         .with_children(|parent| {
             // game title
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
-                    "Wordle",
-                    TextStyle {
-                        font: font_spec.family.clone(),
-                        font_size: 40.0,
-                        color: Color::WHITE,
-                    },
-                    TextAlignment::default(),
-                ),
-                style: Style {
-                    align_self: AlignSelf::Center,
-                    justify_content: JustifyContent::Center,
-                    ..Default::default()
-                },
-                ..Default::default()
-            });
-            // message display
             parent.spawn_bundle(NodeBundle {
                 style: Style {
-                    size: Size::new(Val::Percent(100.0), Val::Auto),
-                    align_items: AlignItems::FlexEnd,
-                    justify_content: JustifyContent::FlexEnd,
-                    align_self: AlignSelf::FlexEnd,
-                    flex_direction: FlexDirection::ColumnReverse,
-                    padding: Rect { left: Val::Px(30.0), right: Val::Px(30.0), top: Val::Px(0.0), bottom: Val::Px(0.0) },
+                    size: Size::new(Val::Percent(50.0), Val::Auto),
+                    justify_content: JustifyContent::FlexStart,
+                    padding: Rect {
+                        left: Val::Px(30.0),
+                        right: Val::Px(30.0),
+                        top: Val::Px(30.0),
+                        bottom: Val::Px(30.0),
+                    },
                     ..Default::default()
                 },
                 color: UiColor(MATERIALS.none),
@@ -90,27 +75,76 @@ fn setup_ui(
             }).with_children(|builder| {
                 builder.spawn_bundle(TextBundle {
                     text: Text::with_section(
-                        "Message Board",
+                        "Wordle",
                         TextStyle {
                             font: font_spec.family.clone(),
-                            font_size: 20.0,
-                            color: Color::WHITE
+                            font_size: 40.0,
+                            color: Color::WHITE,
                         },
                         TextAlignment::default(),
                     ),
+                    style: Style {
+                        align_self: AlignSelf::FlexStart,
+                        ..Default::default()
+                    },
                     ..Default::default()
                 });
-                builder.spawn_bundle(TextBundle {
-                    text: Text::with_section(
-                        "{Default Text}",
-                        TextStyle {
-                            font: font_spec.family.clone(),
-                            font_size: 20.0,
-                            color: Color::WHITE
-                        },
-                        TextAlignment::default(),
-                    ),
+            });
+            // message display container
+            parent.spawn_bundle(NodeBundle {
+                style: Style {
+                    size: Size::new(Val::Percent(50.0), Val::Auto),
                     ..Default::default()
+                },
+                transform: Transform::from_xyz(0.0, 0.0, 1.0),
+                color: UiColor(MATERIALS.none),
+                ..Default::default()
+            }).with_children(|builder| {
+                builder.spawn_bundle(NodeBundle {
+                    // message display bundle
+                    style: Style {
+                        size: Size::new(Val::Percent(100.0), Val::Auto),
+                        align_items: AlignItems::Center,
+                        justify_content: JustifyContent::Center,
+                        align_self: AlignSelf::Center,
+                        flex_direction: FlexDirection::ColumnReverse,
+                        padding: Rect {
+                            left: Val::Percent(20.0),
+                            right: Val::Percent(0.0),
+                            top: Val::Px(0.0),
+                            bottom: Val::Px(0.0)
+                        },
+                        ..Default::default()
+                    },
+                    transform: Transform::from_xyz(0.0, 0.0, 1.0),
+                    color: UiColor(MATERIALS.none),
+                    ..Default::default()
+                }).with_children(|builder| {
+                    builder.spawn_bundle(TextBundle {
+                        text: Text::with_section(
+                            "Message Board",
+                            TextStyle {
+                                font: font_spec.family.clone(),
+                                font_size: 20.0,
+                                color: Color::WHITE
+                            },
+                            TextAlignment::default(),
+                        ),
+                        ..Default::default()
+                    });
+                    builder.spawn_bundle(TextBundle {
+                        text: Text::with_section(
+                            "{Default Text}",
+                            TextStyle {
+                                font: font_spec.family.clone(),
+                                font_size: 20.0,
+                                color: Color::WHITE
+                            },
+                            TextAlignment::default(),
+                        ),
+                        ..Default::default()
+                    })
+                    .insert(MessageText);
                 });
             });
         });
@@ -289,10 +323,6 @@ fn keyboard_button_interaction_system(
                                 guess_writer.send(GuessUpdateEvent{action: GuessUpdateAction::Delete, key})
                             }
                             GuessUpdateAction::Submit => {
-                                if guess.len() != 5 {
-                                    // guess length must be 5 to submit
-                                    continue;
-                                }
                                 guess_writer.send(GuessUpdateEvent{action: GuessUpdateAction::Submit, key})
                             }
                         }

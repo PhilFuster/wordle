@@ -332,7 +332,10 @@ fn spawn_tiles(
 fn guess_update_handler(
     mut guess_reader: EventReader<GuessUpdateEvent>,
     mut commands: Commands,
-    mut texts: Query<&mut Text, With<TileText>>,
+    // p0 - tile texts from board.
+    // p1 - MessageText for displaying messages to user
+    mut text_set: ParamSet<(Query<&mut Text, With<TileText>>,
+                            Query<&mut Text, With<MessageText>>)>,
     mut tiles: Query<
         (&Position, &Children),
         >,
@@ -355,8 +358,16 @@ fn guess_update_handler(
             GuessUpdateAction::Delete => {guess.pop();}
             GuessUpdateAction::Append => {guess.push_str(event.key.as_str());},
             GuessUpdateAction::Submit => {
-                if guess.len() < 5 {return}
-                todo!()
+                let mut message_display_text = text_set.p1();
+                if guess.len() < 5 {
+                    let mut msg_text = message_display_text
+                                    .get_single_mut()
+                                    .expect("expect message text to exist.");
+                    let mut msg_section = msg_text.sections
+                                        .first_mut()
+                                        .expect("expect first text section to be accessible as mutable");
+                    msg_section.value = "5 characters required to submit guess.".to_string();
+                }
             },
         }
         //
@@ -381,11 +392,11 @@ fn guess_update_handler(
                 // while there are still tiles to process
                 while let Some((position, children)) = it.next() {
                     if let Some(entity) = children.first() {
-                        dbg!(position);
                         if position.x as usize > guess.len() {
                             break
                         }
-                        let mut text = texts
+                        let mut tile_texts = text_set.p0();
+                        let mut text = tile_texts
                             .get_mut(*entity)
                             .expect("expected Text to exist");
                         let mut text_section = text.sections.first_mut()
